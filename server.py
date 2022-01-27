@@ -6,6 +6,7 @@ import socket
 import threading
 import time 
 
+HEADER_LEN = 4
 MESSAGE_LEN = 2048
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DIS"
@@ -17,14 +18,23 @@ PORT = 6032
 def handle_client(conn, addr):
     print(f"New connection: {addr} connected.")
     
+    # First message is the client ID (Skip header)
+    CLIENT_ID = conn.recv(MESSAGE_LEN).decode(FORMAT)[HEADER_LEN]
+    
+    # Continuously listen for messages
     connected = True
     while connected:
-        # Listen for message header 
+        # Listen for message
         message = conn.recv(MESSAGE_LEN).decode(FORMAT)
-        if message[len(DISCONNECT_MESSAGE)] == DISCONNECT_MESSAGE:
+        header = message[:HEADER_LEN-1]
+        body_len = int(header)
+        body = message[HEADER_LEN:HEADER_LEN + body_len]
+        
+        # Check for a disconnect
+        if body[:len(DISCONNECT_MESSAGE)] == DISCONNECT_MESSAGE:
             connected = False
 
-        print(f"{addr}: {msg}")
+        print(f"{addr}, {CLIENT_ID}: {body}")
 
     conn.close()
 

@@ -7,7 +7,8 @@ import threading
 import time 
 import sys
 
-MESSAGE_LEN = 2048
+HEADER_LEN = 4     # This goes in front of the message and contains the length of the unpadded message
+MESSAGE_LEN = 2048  # Total length of the padded message
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DIS"
 CLIENT_IDS = ['A', 'B', 'C']
@@ -19,7 +20,19 @@ def send(msg):
     # Encode the message
     message = msg.encode(FORMAT)
     
-    # Pad the message to fit the message length
+    # Create a header containing message length
+    header = str(len(message))
+    header = header.encode(FORMAT)
+    if len(header) > HEADER_LEN:
+        print("Error: message too long")
+        return
+    # Pad the header
+    header += b' ' * (HEADER_LEN - len(header))
+
+    # Append the header in front of the message
+    message = header + message 
+
+    # Pad the message
     message += b' ' * (MESSAGE_LEN - len(message))
     client.send(message)
 
@@ -40,3 +53,10 @@ if __name__ == "__main__":
     
     # Connect to the server
     client.connect((HOST, PORT))
+    send(CLIENT)
+
+    while True:
+        message = input("$")
+        send(message)
+        if message == DISCONNECT_MESSAGE:
+            exit()
