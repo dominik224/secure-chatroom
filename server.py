@@ -5,14 +5,10 @@
 import socket
 import threading
 import time 
+from helperFunctions import *
 
-HEADER_LEN = 4
-MESSAGE_LEN = 2048
-FORMAT = 'utf-8'
-DISCONNECT_MESSAGE = "!DIS"
-HOST = '127.0.0.1' # Localhost
-PORT = 6032        
-
+# Holds all of the connections
+CONN_LIST = {}
 
 # Function which handles connection to a client
 def handle_client(conn, addr):
@@ -25,24 +21,34 @@ def handle_client(conn, addr):
     connected = True
     while connected:
         # Listen for message
-        message = conn.recv(MESSAGE_LEN).decode(FORMAT)
-        header = message[:HEADER_LEN-1]
-        body_len = int(header)
-        body = message[HEADER_LEN:HEADER_LEN + body_len]
-        
+        enc_message = conn.recv(MESSAGE_LEN)
+        body_len, body = decodeMessage(enc_message)
+
         # Check for a disconnect
         if body[:len(DISCONNECT_MESSAGE)] == DISCONNECT_MESSAGE:
             connected = False
+        # Otherwise broadcast the message to all other connected clients
+        else:
+            broadcast(body, CLIENT_ID, exclude=[conn.fileno()])
 
-        print(f"{addr}, {CLIENT_ID}: {body}")
-
+    # If a disconnect occurs delete the connection info and close the connection 
+    del CONN_LIST[conn.fileno()]
     conn.close()
+
+# Sends a message to all connected clients except the one who sent the message
+def broadcast(body, sender, exclude=[]):
+    msg = sender + body
+    msg = encodeMessage(msg)
+    for conn in CONN_LIST:
+        if conn not in exclude:
+            CONN_LIST[conn].send(msg)
 
 # Function to start the server
 def start(server):
     server.listen()
     while True:
         conn, addr = server.accept()
+        CONN_LIST[conn.fileno()] = conn
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
         print(f"Active connections: {threading.activeCount() -1}")
