@@ -53,17 +53,18 @@ class Server(Entity):
         
         while connected:
             message = conn.recv(MESSAGE_LEN)
-            connected = self.read_message(message, conn)
-        
+            connected, id = self.read_message(message, conn)
+
         del self.connection_list[conn.fileno()]
+        del self.connection_ids[id]
         conn.close()
 
-    def read_message(self, msg: bytes, origin: socket):
+    def read_message(self, msg: bytes, origin: socket) -> bool:
         """ Processes messages. """
         message = Message()
         message.deserialize(msg)
         message.verify_signature()
-
+        
         if message.message_type == MessageType.encryptedText:
             self._read_message_enc_text(message)
         elif message.message_type == MessageType.certRequest:
@@ -79,9 +80,9 @@ class Server(Entity):
             print(f"Reading connection message from {message.body['identity']}")
             self.connection_ids[message.body['identity']] = origin.fileno()
         elif message.message_type == MessageType.disconnect:
-            return False
+            return False, message.certificate.identity
         
-        return True 
+        return True, ""
 
     def _read_message_cert_request(self, message: Message, origin: socket):
         """ Reads certificate request message & sends response. """

@@ -76,6 +76,7 @@ class Client(Entity):
             message = MessageDisconnection(self.certificate)
             message.gen_signature(self.private_key)
             self.connection.send(message.serialize())
+            exit()
             
         enc_input, iv, _ = aes_encrypt(input.encode('utf-8'), self.session_key)
         message = MessageEncrypted(enc_input, iv)
