@@ -10,6 +10,7 @@ from random import randint
 from socket import socket, AF_INET, SOCK_STREAM
 from pickle import dumps, loads
 from Entity import *
+from termcolor import colored
 import sys, select, os
 
 
@@ -29,8 +30,11 @@ class Client(Entity):
         self.public_keys: dict[PublicKey] = {}
         self.connection: socket = socket(AF_INET, SOCK_STREAM)
         self.session_key: bytes = None
-        self.screen: list[str] = []
+        self.screen: list[str] = ['\n' for n in range(20)]
+        self.screen_colors: list[str] = ['white' for n in range(20)]
+        self.server_pub_key = None
         self.clear = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
+        self.colors = {'A': 'green', 'B': 'blue', 'C': 'red', 'X': 'yellow'}
         self.load_certificate()
         super().__init__()
 
@@ -56,8 +60,8 @@ class Client(Entity):
 
         # Receive and send messages
         while True:
-            #socket_list = [sys.stdin, self.connection]
-            socket_list = [socket(), self.connection]
+            socket_list = [sys.stdin, self.connection]
+            #socket_list = [socket(), self.connection]
             read_sockets, write_socket, error_socket = select.select(socket_list, [], [])
             for socks in read_sockets:
                 if socks == self.connection:
@@ -68,21 +72,27 @@ class Client(Entity):
                     self.obtain_session_key()
                     session_key = True
                 else:
-                    _input = input(prompt)
-                    self.send_message(_input)
-                    self._update_terminal(_input)
-                    
-    def _update_terminal(self, text):
+                    _input = input("A: ")
+                    if _input != '':
+                        self.send_message(_input)
+                        print("Updating")
+                        self._update_terminal(prompt + _input, self.identity)
+
+    def _update_terminal(self, text, id = 'X'):
         """ Updates terminal to add new messages. """
-        if len(self.screen) > 15:
+        if len(self.screen) > 20:
             self.screen.pop(0)
+        
+        if len(self.screen_colors) > 20:
+            self.screen_colors.pop(0)
 
         self.screen.append(text)
-        self.clear()
-        for i in self.screen:
-            print(i)
-        
+        self.screen_colors.append(self.colors[id])
 
+        self.clear()
+        for line, color in zip(self.screen, self.screen_colors):
+            print(colored(line, color))
+        
     def send_message(self, input: str):
         """ Sends encrypted text message. """
         if input == "!DISCONNECT":
@@ -114,7 +124,7 @@ class Client(Entity):
         text = aes_decrypt(enc_text, iv, self.session_key)
         origin = message.certificate.identity
         #print(f"{origin}: {text.decode('utf-8')}")
-        self._update_terminal(f"{origin}: {text.decode('utf-8')}")
+        self._update_terminal(f"{origin}: {text.decode('utf-8')}", origin)
     
     def _read_message_cert_response(self, message: Message):
         """ Read the certificates and save the public keys. """
@@ -136,7 +146,7 @@ class Client(Entity):
             return
         
         nonce = decrypt(enc_nonce, self.private_key)
-        print("Received nonce from: ", originID)
+        #print("Received nonce from: ", originID)
         self.nonces[originID] = nonce
 
         if len(self.nonces) == (len(self.entities) + 1):
@@ -151,7 +161,7 @@ class Client(Entity):
         nonce_response = MessageNonceResponse(target_id, self.certificate, enc_nonce, challengeResponse)
         nonce_response.certificate = self.certificate
         nonce_response.gen_signature(self.private_key)
-        print("Sending nonce response.")
+        #print("Sending nonce response.")
         self.connection.send(nonce_response.serialize())
     
     def _read_message_nonce_request(self, message: Message):
@@ -214,6 +224,7 @@ class Client(Entity):
             key = key | int.from_bytes(value, 'big')
         
         self.session_key = sha256(key.to_bytes(16, 'big')).digest()[0:128]
+        self._update_terminal("Session key established. Communication encrypted end-to-end.")
 
     def _read_message_cert_request(message: Message):
         return super()._read_message_cert_request()
