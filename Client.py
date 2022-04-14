@@ -52,17 +52,26 @@ class Client(Entity):
         connectionMessage = self._gen_message_connection()
         self.connection.send(connectionMessage)
 
+        # Receive and send messages
+        if os.name in ('nt', 'dos'):
+            self.win_socket_loop()
+        else:
+            self.unix_socket_loop()
+
+    
+    def unix_socket_loop(self):
+        """ Send + Receive loop for Unix terminals. """
+
         # Obtain a session key from the server
         session_key = False
         
         # Input prompt
         prompt = f"{self.identity}: "
 
-        # Receive and send messages
         while True:
             socket_list = [sys.stdin, self.connection]
-            #socket_list = [socket(), self.connection]
-            read_sockets, write_socket, error_socket = select.select(socket_list, [], [])
+            read_sockets, write_sockets, error_sockets = select.select(socket_list , [], [])
+
             for socks in read_sockets:
                 if socks == self.connection:
                     message = socks.recv(MESSAGE_LEN)
@@ -72,7 +81,37 @@ class Client(Entity):
                     self.obtain_session_key()
                     session_key = True
                 else:
-                    _input = input("A: ")
+                    _input = input()
+                    if _input != '':
+                        self.send_message(_input)
+                        print("Updating")
+                        self._update_terminal(prompt + _input, self.identity)
+
+    def win_socket_loop(self):
+        """ Send + Receive loop for Windows console. """
+        print(colored('Warning: This chat application works better on a Linux terminal.\nInput and output may not be as smooth.', 'yellow'))
+
+        # Obtain a session key from the server
+        session_key = False
+        
+        # Input prompt
+        prompt = f"{self.identity}: "
+
+        while True:
+            ready_to_read = select.select([ self.connection], [], [], 1)[0]
+            import msvcrt
+            if msvcrt.kbhit(): ready_to_read.append(sys.stdin)
+
+            for socks in ready_to_read:
+                if socks == self.connection:
+                    message = socks.recv(MESSAGE_LEN)
+                    self.read_message(message)
+                elif not session_key:
+                    _input = input()
+                    self.obtain_session_key()
+                    session_key = True
+                else:
+                    _input = input()
                     if _input != '':
                         self.send_message(_input)
                         print("Updating")
