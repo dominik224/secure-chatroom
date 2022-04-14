@@ -30,8 +30,8 @@ class Client(Entity):
         self.public_keys: dict[PublicKey] = {}
         self.connection: socket = socket(AF_INET, SOCK_STREAM)
         self.session_key: bytes = None
-        self.screen: list[str] = ['\n' for n in range(20)]
-        self.screen_colors: list[str] = ['white' for n in range(20)]
+        self.screen: list[str] = ['\n' for n in range(os.get_terminal_size().lines)]
+        self.screen_colors: list[str] = ['white' for n in range(os.get_terminal_size().lines)]
         self.server_pub_key = None
         self.clear = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
         self.colors = {'A': 'green', 'B': 'blue', 'C': 'red', 'X': 'yellow'}
@@ -80,10 +80,11 @@ class Client(Entity):
 
     def _update_terminal(self, text, id = 'X'):
         """ Updates terminal to add new messages. """
-        if len(self.screen) > 20:
+        size = os.get_terminal_size().lines
+        if len(self.screen) > size:
             self.screen.pop(0)
         
-        if len(self.screen_colors) > 20:
+        if len(self.screen_colors) > size:
             self.screen_colors.pop(0)
 
         self.screen.append(text)

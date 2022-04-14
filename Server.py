@@ -68,6 +68,7 @@ class Server(Entity):
         if message.message_type == MessageType.encryptedText:
             self._read_message_enc_text(message)
         elif message.message_type == MessageType.certRequest:
+            print('-' * 20)
             print("Reading cert request.")
             self._read_message_cert_request(message, origin)
         elif message.message_type == MessageType.nonceRequest:
