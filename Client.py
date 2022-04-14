@@ -1,14 +1,13 @@
 """
     Client file
 """
-from rsa import PrivateKey, PublicKey, encrypt, decrypt
+from rsa import PublicKey, encrypt, decrypt
 from lib.certificate import Certificate
 from Cryptodome.Random import get_random_bytes
 from lib.message import Message, MessageCertRequest, MessageCertResponse, MessageType
-from lib.encryption import create_envelope, unpack_envelope, aes_encrypt, aes_decrypt
+from lib.encryption import aes_encrypt, aes_decrypt
 from random import randint
 from socket import socket, AF_INET, SOCK_STREAM
-from pickle import dumps, loads
 from Entity import *
 from termcolor import colored
 import sys, select, os

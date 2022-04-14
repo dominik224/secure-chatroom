@@ -1,10 +1,7 @@
 from ssl import SOL_SOCKET
 from lib.certificate import Certificate
 from lib.message import Message, MessageType
-from lib.encryption import create_envelope, unpack_envelope
 from socket import SO_REUSEADDR, socket, AF_INET, SOCK_STREAM
-from rsa import encrypt, decrypt, PrivateKey, PublicKey
-from pickle import dumps, loads
 from Entity import *
 import threading
 
