@@ -10,7 +10,7 @@ from random import randint
 from socket import socket, AF_INET, SOCK_STREAM
 from pickle import dumps, loads
 from Entity import *
-import sys, select
+import sys, select, os
 
 
 class Client(Entity):
@@ -27,9 +27,10 @@ class Client(Entity):
         self.nonce_challenge: int = -1
         self.certificate: Certificate = Certificate()
         self.public_keys: dict[PublicKey] = {}
-        self.connection: socket
-        self.server_pub_key: PublicKey
+        self.connection: socket = socket(AF_INET, SOCK_STREAM)
         self.session_key: bytes = None
+        self.screen: list[str] = []
+        self.clear = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
         self.load_certificate()
         super().__init__()
 
@@ -40,7 +41,6 @@ class Client(Entity):
     def connect(self, host: str, port: int) -> None:
         """ Connects to the server. """
         print("Connecting to the server...")
-        self.connection = socket(AF_INET, SOCK_STREAM)
         self.connection.connect((host, port))
         print("Connected.")
         print("Press Enter to establish a session key.")
@@ -50,24 +50,38 @@ class Client(Entity):
 
         # Obtain a session key from the server
         session_key = False
-        #self.obtain_session_key()
+        
+        # Input prompt
+        prompt = f"{self.identity}: "
 
         # Receive and send messages
         while True:
-            socket_list = [sys.stdin, self.connection]
+            #socket_list = [sys.stdin, self.connection]
+            socket_list = [socket(), self.connection]
             read_sockets, write_socket, error_socket = select.select(socket_list, [], [])
             for socks in read_sockets:
                 if socks == self.connection:
                     message = socks.recv(MESSAGE_LEN)
                     self.read_message(message)
                 elif not session_key:
-                    _input = input() #sys.stdin.readline()
+                    _input = input()
                     self.obtain_session_key()
                     session_key = True
                 else:
-                    _input = input()#input(f"{self.identity}: ")
+                    _input = input(prompt)
                     self.send_message(_input)
-                    #sys.stdout.flush()
+                    self._update_terminal(_input)
+                    
+    def _update_terminal(self, text):
+        """ Updates terminal to add new messages. """
+        if len(self.screen) > 15:
+            self.screen.pop(0)
+
+        self.screen.append(text)
+        self.clear()
+        for i in self.screen:
+            print(i)
+        
 
     def send_message(self, input: str):
         """ Sends encrypted text message. """
@@ -99,7 +113,8 @@ class Client(Entity):
         iv = message.body['iv']
         text = aes_decrypt(enc_text, iv, self.session_key)
         origin = message.certificate.identity
-        print(f"{origin}: {text.decode('utf-8')}")
+        #print(f"{origin}: {text.decode('utf-8')}")
+        self._update_terminal(f"{origin}: {text.decode('utf-8')}")
     
     def _read_message_cert_response(self, message: Message):
         """ Read the certificates and save the public keys. """
