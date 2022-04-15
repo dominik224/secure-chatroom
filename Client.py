@@ -33,7 +33,7 @@ class Client(Entity):
         self.screen_colors: list[str] = ['white' for n in range(os.get_terminal_size().lines)]
         self.server_pub_key = None
         self.clear = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
-        self.colors = {'A': 'green', 'B': 'blue', 'C': 'red', 'X': 'yellow'}
+        self.colors = {'A': 'green', 'B': 'cyan', 'C': 'magenta', 'X': 'yellow'}
         self.load_certificate()
         super().__init__()
 
@@ -88,6 +88,7 @@ class Client(Entity):
 
     def win_socket_loop(self):
         """ Send + Receive loop for Windows console. """
+        os.system('color')
         print(colored('Warning: This chat application works better on a Linux terminal.\nInput and output may not be as smooth.', 'yellow'))
 
         # Obtain a session key from the server
