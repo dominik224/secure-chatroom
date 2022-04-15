@@ -133,3 +133,4 @@ class Server(Entity):
 
 if __name__ == "__main__":
     server = Server(HOST, PORT)
+    print("Server started. Waiting for connections.")

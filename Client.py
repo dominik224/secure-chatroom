@@ -98,7 +98,8 @@ class Client(Entity):
         prompt = f"{self.identity}: "
 
         while True:
-            ready_to_read = select.select([ self.connection], [], [], 1)[0]
+            # Workaround for windows as sys.stdin isn't treated as a socket.
+            ready_to_read = select.select([self.connection], [], [], 1)[0]
             import msvcrt
             if msvcrt.kbhit(): ready_to_read.append(sys.stdin)
 
@@ -270,5 +271,15 @@ class Client(Entity):
         return super()._read_message_cert_request()
 
 if __name__ == "__main__":
-    client = Client(sys.argv[1].upper())
+    if len(sys.argv) < 2:
+        print("Error: No identity specified.")
+        print("Usage: Client.py <ID>")
+        exit()
+    
+    identity = sys.argv[1].upper()
+    if identity not in ['A', 'B', 'C']:
+        print("Error: Identity can only be A, B or C")
+        exit()
+
+    client = Client(identity)
     client.connect(HOST, PORT)
