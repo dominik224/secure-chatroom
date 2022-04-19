@@ -1,10 +1,17 @@
+"""
+    Entity class
+    Provides and abstract base class for Server and Client.
+"""
+# Custom modules
+from lib.message import *
+
+# Python modules
 from abc import ABC, abstractmethod
 from rsa import PrivateKey
-from lib.message import *
 
 HOST = '127.0.0.1'
 PORT = 6032
-MESSAGE_LEN = 4096*3
+MESSAGE_LEN = 4096*3 # 12Kb messages, arbitrary value - can be changed
 
 class Entity(ABC):
     """ Base class for the Server and Client classes. """

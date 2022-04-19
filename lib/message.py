@@ -1,10 +1,17 @@
-from cffi import VerificationError
+"""
+    Contains all necessary message classes.
+"""
+# Custom modules
 from lib.certificate import Certificate
+
+# Python modules
+from cffi import VerificationError
 from rsa import sign, verify, PrivateKey
 from pickle import dumps, loads
 from enum import Enum, auto
 from hashlib import sha256
 
+# Enumerator for message types
 class MessageType(Enum):
     connection = auto()         # Message on connection, includes identity
     disconnect = auto()         # Message signalling disconnect
@@ -46,7 +53,7 @@ class Message:
             return False
 
     def serialize(self, msg_length: int = 0) -> bytes:
-        """ Serializes the message. """
+        """ Serializes the message so it can be sent through a socket. """
 
         if self.signature == None:
             raise Exception("Signature needs to be generated first.")

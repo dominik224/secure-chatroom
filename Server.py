@@ -1,9 +1,18 @@
-from ssl import SOL_SOCKET
+"""
+    Server class
+    Accepts messages from entities A, B, C and acts as a trusted authority.
+    Supports establishing a shared secret session key, and sending encrypted text.
+"""
+
+# Custom modules
 from lib.certificate import Certificate
 from lib.message import Message, MessageType
-from socket import SO_REUSEADDR, socket, AF_INET, SOCK_STREAM
 from Entity import *
-import threading
+
+# Python modules
+from ssl import SOL_SOCKET
+from socket import SO_REUSEADDR, socket, AF_INET, SOCK_STREAM
+import os, threading
 
 class Server(Entity):
     """ Socket server."""
@@ -48,6 +57,7 @@ class Server(Entity):
         print(f"New connection: {addr}.")
         connected = True
         
+        print("Server started. Waiting for connections.")
         while connected:
             message = conn.recv(MESSAGE_LEN)
             connected, id = self.read_message(message, conn)
@@ -55,6 +65,11 @@ class Server(Entity):
         del self.connection_list[conn.fileno()]
         del self.connection_ids[id]
         conn.close()
+
+        # If there aren't any connections left, close the server
+        if len(self.connection_list) == 0:
+            print("Server closing.")
+            os._exit(1)
 
     def read_message(self, msg: bytes, origin: socket) -> bool:
         """ Processes messages. """
@@ -133,4 +148,3 @@ class Server(Entity):
 
 if __name__ == "__main__":
     server = Server(HOST, PORT)
-    print("Server started. Waiting for connections.")

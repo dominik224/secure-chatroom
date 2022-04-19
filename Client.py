@@ -1,17 +1,21 @@
 """
-    Client file
+    Client class
+    Client communication is done through a server S. All messages utilize Authentication and Integrity.
+    Confidentiality is first provided via RSA and then via AES-CBC.
 """
-from rsa import PublicKey, encrypt, decrypt
+# Custom modules
 from lib.certificate import Certificate
-from Cryptodome.Random import get_random_bytes
 from lib.message import Message, MessageCertRequest, MessageCertResponse, MessageType
 from lib.encryption import aes_encrypt, aes_decrypt
+from Entity import *
+
+# Python modules
+from rsa import PublicKey, encrypt, decrypt
+from Cryptodome.Random import get_random_bytes # pip install pycryptodomex
 from random import randint
 from socket import socket, AF_INET, SOCK_STREAM
-from Entity import *
 from termcolor import colored
 import sys, select, os
-
 
 class Client(Entity):
     """ Socket client. """
@@ -33,7 +37,7 @@ class Client(Entity):
         self.screen_colors: list[str] = ['white' for n in range(os.get_terminal_size().lines)]
         self.server_pub_key = None
         self.clear = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
-        self.colors = {'A': 'green', 'B': 'cyan', 'C': 'magenta', 'X': 'yellow'}
+        self.colors = {'A': 'green', 'B': 'blue', 'C': 'magenta', 'X': 'yellow'}
         self.load_certificate()
         super().__init__()
 

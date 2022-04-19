@@ -1,7 +1,7 @@
 """
     Handles definition and creation of public key certificates
 """
-
+# Python modules
 import pickle
 from rsa import PublicKey, PrivateKey, newkeys, sign
 
